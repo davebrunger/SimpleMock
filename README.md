@@ -40,7 +40,7 @@ The examples below use the following interface as an example
 
 ### Getting the Parameter Values of a Specific Call
 
-    workerMock.GetCallCount(w => w.DoSomething(0, "", false), 7);
+    workerMock.GetCallParameters(w => w.DoSomething(0, "", false), 7);
 
 **N.B.** The index is zero-based.
 
