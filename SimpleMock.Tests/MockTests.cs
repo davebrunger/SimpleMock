@@ -1,5 +1,3 @@
-using System.Runtime.Serialization.Formatters;
-
 namespace SimpleMock.Tests
 {
     public class MockTests
