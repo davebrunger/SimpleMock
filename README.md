@@ -30,7 +30,7 @@ The examples below use the following interface as an example
 
 ### Supplying the Mock to a Dependant
 
-    var dependant = new Dependant(workerMock.Object);
+    var dependant = new Dependant(workerMock.MockObject);
 
 ## Limitations
 This is only a very simple and niave implementation so there are a number of limitations, amongst which are:

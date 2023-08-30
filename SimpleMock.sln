@@ -10,6 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleMock.Tests", "SimpleMock.Tests\SimpleMock.Tests.csproj", "{5CA6EAF6-7646-4D41-8D34-F63AB713D836}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{31D1878A-D51E-4C20-8067-F5DFDE54E5D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{31D1878A-D51E-4C20-8067-F5DFDE54E5D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{31D1878A-D51E-4C20-8067-F5DFDE54E5D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CA6EAF6-7646-4D41-8D34-F63AB713D836}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CA6EAF6-7646-4D41-8D34-F63AB713D836}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CA6EAF6-7646-4D41-8D34-F63AB713D836}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CA6EAF6-7646-4D41-8D34-F63AB713D836}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
