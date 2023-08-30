@@ -26,13 +26,13 @@ public class Mock<T>
         {
         }
 
-        public object? Call(object obj, MethodInfo info)
+        public object? Call(T obj, MethodInfo info)
         {
             return Mock<T>.Call(obj, info);
         }
     }
 
-    private static readonly Dictionary<(object, MethodInfo), object?> returnValues = new();
+    private static readonly Dictionary<(T, MethodInfo), object?> returnValues = new();
     private static readonly Caller caller = new();
     private static readonly TypeGenerator<T> typeGenerator = new(caller);
 
@@ -43,7 +43,7 @@ public class Mock<T>
         MockObject = (T)Activator.CreateInstance(typeGenerator.Type)!;
     }
 
-    protected static object? Call(object obj, MethodInfo info)
+    protected static object? Call(T obj, MethodInfo info)
     {
         if (returnValues.ContainsKey((obj, info)))
         {
