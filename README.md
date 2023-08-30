@@ -32,6 +32,20 @@ The examples below use the following interface as an example
 
     var dependant = new Dependant(workerMock.MockObject);
 
+### Getting the Call Count
+
+    workerMock.GetCallCount(w => w.DoSomething(0, "", false));
+
+**N.B.** Currently the values supplied as parameters are ignored. In this example, the call count will be the total number of calls to `DoSomething` regardless of parameters.
+
+### Getting the Parameter Values of a Specific Call
+
+    workerMock.GetCallCount(w => w.DoSomething(0, "", false), 7);
+
+**N.B.** The index is zero-based.
+
+**N.B.** Currently the values supplied as parameters are ignored. In this example, the parameters will be those of the eighth call to `DoSomething` regardless of parameters.
+
 ## Limitations
 This is only a very simple and niave implementation so there are a number of limitations, amongst which are:
 * Can only mock interfaces

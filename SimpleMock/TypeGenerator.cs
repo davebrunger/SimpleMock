@@ -25,40 +25,71 @@ internal class TypeGenerator<T>
         }
         else if (mockedType.IsAbstract)
         {
-            throw new Exception("Abstract classes not supported, yet!");
+            throw new InvalidOperationException("Abstract classes not supported, yet!");
         }
         else
         {
-            throw new Exception("Mocked type must be an interface or an abstract type!");
+            throw new InvalidOperationException("Mocked type must be an interface or an abstract type!");
         }
 
         foreach (var method in mockedType.GetMethods())
         {
-            var parameters = method.GetParameters();
-            var methodBuilder = typeBuilder.DefineMethod(
-                method.Name, 
-                method.Attributes & ~MethodAttributes.Abstract, 
-                method.ReturnType, 
-                parameters.Select(p => p.ParameterType).ToArray());
-            var ilGenerator = methodBuilder.GetILGenerator();
-
-            LoadObject(ilGenerator, caller);
-            ilGenerator.Emit(OpCodes.Ldarg_0); // this, IE MockObject.
-            LoadObject(ilGenerator, method);
-            ilGenerator.EmitCall(OpCodes.Callvirt, callMethod!, null);
-            if (method.ReturnType.IsValueType)
-            {
-                ilGenerator.Emit(OpCodes.Unbox_Any, method.ReturnType);
-            }
-            else
-            {
-                ilGenerator.Emit(OpCodes.Castclass, method.ReturnType);
-            }
-            ilGenerator.Emit(OpCodes.Ret);
-            typeBuilder.DefineMethodOverride(methodBuilder, method);
+            GenerateMethod(typeBuilder, method);
         }
 
         return typeBuilder.CreateType()!;
+    }
+
+    private void GenerateMethod(TypeBuilder typeBuilder, MethodInfo method)
+    {
+        var methodBuilder = typeBuilder.DefineMethod(
+            method.Name,
+            method.Attributes & ~MethodAttributes.Abstract,
+            method.ReturnType,
+            method.GetParameters().Select(p => p.ParameterType).ToArray());
+        var ilGenerator = methodBuilder.GetILGenerator();
+
+        var parameterValues = LoadParameterValues(ilGenerator, method);
+        LoadObject(ilGenerator, caller);
+        ilGenerator.Emit(OpCodes.Ldarg_0); // this, IE MockObject.
+        LoadObject(ilGenerator, method);
+        ilGenerator.Emit(OpCodes.Ldloc, parameterValues);
+        
+        ilGenerator.EmitCall(OpCodes.Callvirt, callMethod!, null);
+        if (method.ReturnType.IsValueType)
+        {
+            ilGenerator.Emit(OpCodes.Unbox_Any, method.ReturnType);
+        }
+        else
+        {
+            ilGenerator.Emit(OpCodes.Castclass, method.ReturnType);
+        }
+        ilGenerator.Emit(OpCodes.Ret);
+        typeBuilder.DefineMethodOverride(methodBuilder, method);
+    }
+
+    private static LocalBuilder LoadParameterValues(ILGenerator ilGenerator, MethodInfo method)
+    {
+        var localBuilder = ilGenerator.DeclareLocal(typeof(object[]));
+
+        var parameters = method.GetParameters();
+
+        ilGenerator.Emit(OpCodes.Ldc_I4, parameters.Length);
+        ilGenerator.Emit(OpCodes.Newarr, typeof(object));
+        ilGenerator.Emit(OpCodes.Stloc, localBuilder);
+
+        foreach( var parameter in parameters.Select((p, i) => (p, i)))
+        {
+            ilGenerator.Emit(OpCodes.Ldloc, localBuilder);
+            ilGenerator.Emit(OpCodes.Ldc_I4, parameter.i);
+            ilGenerator.Emit(OpCodes.Ldarg, parameter.i + 1);
+            if (parameter.p.ParameterType.IsValueType)
+            {
+                ilGenerator.Emit(OpCodes.Box, parameter.p.ParameterType);
+            }
+            ilGenerator.Emit(OpCodes.Stelem_Ref);
+        }
+        return localBuilder;        
     }
 
     private static void LoadObject<TObject>(ILGenerator ilGenerator, TObject obj)
