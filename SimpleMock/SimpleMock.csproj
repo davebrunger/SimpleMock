@@ -12,11 +12,15 @@
     <PackageProjectUrl>https://github.com/davebrunger/SimpleMock</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/davebrunger/SimpleMock.git</RepositoryUrl>
-    <PackageTags>mock;testing;lightweight</PackageTags>
+    <PackageTags>mock;testing;lightweight;simple;dave;david;brunger</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <EnableNETAnalyzers>False</EnableNETAnalyzers>
+    <SignAssembly>False</SignAssembly>
+    <AssemblyVersion>1.0.1</AssemblyVersion>
+    <FileVersion>1.0.1</FileVersion>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -44,7 +44,13 @@ var dependant = new Dependant(workerMock.MockObject);
 workerMock.GetCallCount(w => w.DoSomething(0, "", false));
 ```
 
-**N.B.** Currently the values supplied as parameters are ignored. In this example, the call count will be the total number of calls to `DoSomething` regardless of parameters.
+**N.B.** Unlike `Setup().Returns()` The values supplied as parameters are not ignored. Use `It.IsAny<>()` to match all method calls
+
+The following code will only match method calls that passed an empty string for the second parameter regardless of the values of the other two parameters.
+
+```C#
+workerMock.GetCallCount(w => w.DoSomething(It.IsAny<int>(), "", It.IsAny<bool>()));
+```
 
 ### Getting the Parameter Values of a Specific Call
 ```C#
@@ -53,11 +59,16 @@ workerMock.GetCallParameters(w => w.DoSomething(0, "", false), 7);
 
 **N.B.** The index is zero-based.
 
-**N.B.** Currently the values supplied as parameters are ignored. In this example, the parameters will be those of the eighth call to `DoSomething` regardless of parameters.
+**N.B.** Unlike `Setup().Returns()` The values supplied as parameters are not ignored. Use `It.IsAny<>()` to match all method calls
+
+The following code will only match method calls that passed 59 for the first parameter regardless of the values of the other two parameters.
+
+```C#
+workerMock.GetCallParameters(w => w.DoSomething(59, It.IsAny<string>(), It.IsAny<bool>()), 2);
+```
 
 ## Limitations
 This is only a very simple and niave implementation so there are a number of limitations, amongst which are:
 * Can only mock interfaces
 * No support for callbacks
 * Argument values passed in the `Setup` method are ignored.
-* No verification on number of calls to mock.

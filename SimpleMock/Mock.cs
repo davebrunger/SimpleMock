@@ -36,6 +36,8 @@ public class Mock<T>
     private static readonly Dictionary<(T, MethodInfo), List<object[]>> callDetails = new();
     private static readonly Caller caller = new();
     private static readonly TypeGenerator<T> typeGenerator = new(caller);
+    private static readonly MethodInfo equals = typeof(object).GetMethod("Equals", BindingFlags.Static | BindingFlags.Public)!;
+
 
     public T MockObject { get; }
 
@@ -71,40 +73,70 @@ public class Mock<T>
 
     public SetupResult<TResult> Setup<TResult>(Expression<Func<T, TResult>> expression)
     {
-        return new SetupResult<TResult>(this, GetMethod(expression));
+        var (method, _) = GetMethod(expression);
+        return new SetupResult<TResult>(this, method);
     }
 
     public int GetCallCount<TResult>(Expression<Func<T, TResult>> expression)
     {
-        var key = (MockObject, GetMethod(expression));
-        if (callDetails.ContainsKey(key))
-        {
-            return callDetails[key].Count;
-        }
-        return 0;
+        return GetCallDetails(expression).Count();
     }
 
     public object[] GetCallParameters<TResult>(Expression<Func<T, TResult>> expression, int callIndex)
     {
-        var key = (MockObject, GetMethod(expression));
-        if (callIndex < 0 || !callDetails.ContainsKey(key) || callIndex >= callDetails[key].Count)
+        var callDetails = GetCallDetails(expression).ToList();
+        if (callIndex < 0 || callIndex >= callDetails.Count)
         {
             throw new ArgumentOutOfRangeException(nameof(callIndex));
         }
-        return callDetails[key][callIndex];
+        return callDetails[callIndex];
     }
 
-    private static MethodInfo GetMethod<TResult>(Expression<Func<T, TResult>> expression)
+    private IEnumerable<object[]> GetCallDetails<TResult>(Expression<Func<T, TResult>> expression)
+    {
+        var (method, isProperty) = GetMethod(expression);
+        var key = (MockObject, method);
+        if (!callDetails.ContainsKey(key))
+        {
+            return Enumerable.Empty<object[]>();
+        }
+        if (isProperty)
+        {
+            return callDetails[key];
+        }
+        var argumentPredicates = GetArgumentPredicates((expression.Body as MethodCallExpression)!).ToList();
+        return callDetails[key].Where(cd => argumentPredicates.Select((p, i) => (p, i)).All(a => a.p(cd[a.i])));
+    }
+
+    private static IEnumerable<Func<object, bool>> GetArgumentPredicates(MethodCallExpression methodCall)
+    {
+        return methodCall.Arguments
+            .Select(a =>
+            {
+                if (a is MethodCallExpression methodCall
+                    && methodCall.Method.IsGenericMethod
+                    && methodCall.Method.GetGenericMethodDefinition() == It.IsAnyMethod)
+                {
+                    return o => true;
+                }
+                var parameter = Expression.Parameter(typeof(object));
+                var cast = Expression.Convert(a, typeof(object));
+                var body = Expression.Call(null, equals, parameter, cast);
+                return Expression.Lambda<Func<object, bool>>(body, parameter).Compile();
+            });
+    }
+
+    private static (MethodInfo MethodInfo, bool IsProperty) GetMethod<TResult>(Expression<Func<T, TResult>> expression)
     {
         if (expression.Body is MethodCallExpression methodCallExpression)
         {
-            return methodCallExpression.Method;
+            return (methodCallExpression.Method, false);
         }
         if (expression.Body is MemberExpression memberExpression
             && memberExpression.Member is PropertyInfo property
             && property.CanRead)
         {
-            return property.GetGetMethod()!;
+            return (property.GetGetMethod()!, true);
         }
         throw new ArgumentException("Only method call and get property expressions can be setup", nameof(expression));
     }
