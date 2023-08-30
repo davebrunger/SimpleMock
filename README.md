@@ -47,8 +47,9 @@ workerMock.GetCallCount(w => w.DoSomething(0, "", false));
 **N.B.** Currently the values supplied as parameters are ignored. In this example, the call count will be the total number of calls to `DoSomething` regardless of parameters.
 
 ### Getting the Parameter Values of a Specific Call
-
-    workerMock.GetCallParameters(w => w.DoSomething(0, "", false), 7);
+```C#
+workerMock.GetCallParameters(w => w.DoSomething(0, "", false), 7);
+```
 
 **N.B.** The index is zero-based.
 
