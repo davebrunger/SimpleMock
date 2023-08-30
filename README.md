@@ -2,7 +2,7 @@
 SimpleMock is a very simple mocking framework, something that I have always wanted to try to write but I was prompted to have a go after a discussion at work.
 
 ## Usage
-The examples below use the folling interface as an example
+The examples below use the following interface as an example
 
     public interface IWorker
     {
