@@ -4,37 +4,45 @@ SimpleMock is a very simple mocking framework, something that I have always want
 ## Usage
 The examples below use the following interface as an example
 
-    public interface IWorker
-    {
-        int DoSomething(int anInt, string aString, bool aBool);
-        string DoSomethingStringy(int anInt);
-        int Height { get; }
-    }
+```C#
+public interface IWorker
+{
+    int DoSomething(int anInt, string aString, bool aBool);
+    string DoSomethingStringy(int anInt);
+    int Height { get; }
+}
+```
 
 ### Creating the Mock
-    var workerMock = new Mock<IWorker>();
+```C#
+var workerMock = new Mock<IWorker>();
+```
 
 ### Mocking a Method
-    
-    workerMock
-        .Setup(w => w.DoSomething(0, "", false))
-        .Returns(5);
+```C#
+workerMock
+    .Setup(w => w.DoSomething(0, "", false))
+    .Returns(5);
+```
 
 **N.B.** Currently the values supplied as parameters are ignored. In this example, any call to `DoSomething` will return 5.
 
 ### Mocking a Readable Property
-
-    workerMock
-        .Setup(w => w.Height)
-        .Returns(10);
+```C#
+workerMock
+    .Setup(w => w.Height)
+    .Returns(10);
+```
 
 ### Supplying the Mock to a Dependant
-
-    var dependant = new Dependant(workerMock.MockObject);
+```C#
+var dependant = new Dependant(workerMock.MockObject);
+```
 
 ### Getting the Call Count
-
-    workerMock.GetCallCount(w => w.DoSomething(0, "", false));
+```C#
+workerMock.GetCallCount(w => w.DoSomething(0, "", false));
+```
 
 **N.B.** Currently the values supplied as parameters are ignored. In this example, the call count will be the total number of calls to `DoSomething` regardless of parameters.
 
