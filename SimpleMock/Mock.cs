@@ -6,16 +6,18 @@ public class Mock<T>
     {
         private readonly Mock<T> parent;
         private readonly MethodInfo info;
+        private readonly List<Func<object, bool>> argumentPredicates;
 
-        internal SetupResult(Mock<T> parent, MethodInfo info)
+        internal SetupResult(Mock<T> parent, MethodInfo info, List<Func<object, bool>> argumentPredicates)
         {
             this.parent = parent;
             this.info = info;
+            this.argumentPredicates = argumentPredicates;
         }
 
         public Mock<T> Returns(TResult result)
         {
-            parent.SetReturn(info, result);
+            parent.SetReturn(info, result!, argumentPredicates);
             return parent;
         }
     }
@@ -32,7 +34,7 @@ public class Mock<T>
         }
     }
 
-    private static readonly Dictionary<(T, MethodInfo), object?> returnValues = new();
+    private static readonly Dictionary<(T, MethodInfo), List<(List<Func<object, bool>> ArgumentPredicates, object ReturnValue)>> returnValues = new();
     private static readonly Dictionary<(T, MethodInfo), List<object[]>> callDetails = new();
     private static readonly Caller caller = new();
     private static readonly TypeGenerator<T> typeGenerator = new(caller);
@@ -50,15 +52,29 @@ public class Mock<T>
     {
         var key = (obj, info);
 
+        // Add call to call history
         if (!callDetails.ContainsKey(key))
         {
             callDetails[key] = new List<object[]>();
         }
         callDetails[key].Add(parameters);
+
+        // Get return value 
         if (returnValues.ContainsKey(key))
         {
-            return returnValues[key];
+            foreach (var (argumentPredicates, returnValue) in returnValues[key])
+            {
+                var predicateMatch = argumentPredicates
+                    .Select((p, i) => (p, i))
+                    .All(a => a.p(parameters[a.i]));
+                if (predicateMatch)
+                {
+                    return returnValue;
+                }
+            }
         }
+
+        // If it doesn't match a setup result return the default instance
         if (info.ReturnType.IsValueType)
         {
             return Activator.CreateInstance(info.ReturnType);
@@ -66,15 +82,20 @@ public class Mock<T>
         return null;
     }
 
-    private void SetReturn(MethodInfo info, object? result)
+    private void SetReturn(MethodInfo info, object result, List<Func<object, bool>> argumentPredicates)
     {
-        returnValues[(MockObject, info)] = result;
+        var key = (MockObject, info);
+        if (!returnValues.ContainsKey(key))
+        {
+            returnValues[key] = new List<(List<Func<object, bool>> ArgumentPredicates, object ReturnValue)>();
+        }
+        returnValues[(MockObject, info)].Add((argumentPredicates, result));
     }
 
     public SetupResult<TResult> Setup<TResult>(Expression<Func<T, TResult>> expression)
     {
-        var (method, _) = GetMethod(expression);
-        return new SetupResult<TResult>(this, method);
+        var (method, argumentPredicates) = GetMethod(expression);
+        return new SetupResult<TResult>(this, method, argumentPredicates);
     }
 
     public int GetCallCount<TResult>(Expression<Func<T, TResult>> expression)
@@ -94,49 +115,48 @@ public class Mock<T>
 
     private IEnumerable<object[]> GetCallDetails<TResult>(Expression<Func<T, TResult>> expression)
     {
-        var (method, isProperty) = GetMethod(expression);
+        var (method, argumentPredicates) = GetMethod(expression);
         var key = (MockObject, method);
         if (!callDetails.ContainsKey(key))
         {
             return Enumerable.Empty<object[]>();
         }
-        if (isProperty)
-        {
-            return callDetails[key];
-        }
-        var argumentPredicates = GetArgumentPredicates((expression.Body as MethodCallExpression)!).ToList();
         return callDetails[key].Where(cd => argumentPredicates.Select((p, i) => (p, i)).All(a => a.p(cd[a.i])));
     }
 
-    private static IEnumerable<Func<object, bool>> GetArgumentPredicates(MethodCallExpression methodCall)
+    private static (MethodInfo MethodInfo, List<Func<object, bool>> ArgumentPredicates) GetMethod<TResult>(Expression<Func<T, TResult>> expression)
     {
-        return methodCall.Arguments
-            .Select(a =>
-            {
-                if (a is MethodCallExpression methodCall
-                    && methodCall.Method.IsGenericMethod
-                    && methodCall.Method.GetGenericMethodDefinition() == It.IsAnyMethod)
-                {
-                    return o => true;
-                }
-                var parameter = Expression.Parameter(typeof(object));
-                var cast = Expression.Convert(a, typeof(object));
-                var body = Expression.Call(null, equals, parameter, cast);
-                return Expression.Lambda<Func<object, bool>>(body, parameter).Compile();
-            });
-    }
-
-    private static (MethodInfo MethodInfo, bool IsProperty) GetMethod<TResult>(Expression<Func<T, TResult>> expression)
-    {
-        if (expression.Body is MethodCallExpression methodCallExpression)
+        if (expression.Body is MethodCallExpression methodCall)
         {
-            return (methodCallExpression.Method, false);
+            var argumentPredicates = methodCall.Arguments
+                .Select(a =>
+                {
+                    var parameter = Expression.Parameter(typeof(object));
+                    if (a is MethodCallExpression methodCall && methodCall.Method.IsGenericMethod)
+                    {
+                        if (methodCall.Method.GetGenericMethodDefinition() == It.IsAnyMethod)
+                        {
+                            return o => true;
+                        }
+                        if (methodCall.Method.GetGenericMethodDefinition() == It.IsMethod)
+                        {
+                            var castToT = Expression.Convert(parameter, methodCall.Type);
+                            var bodyLambda = methodCall.Arguments[0] as LambdaExpression;
+                            var invoke = Expression.Invoke(methodCall.Arguments[0], castToT);
+                            return Expression.Lambda<Func<object, bool>>(invoke, parameter).Compile();
+                        }
+                    }
+                    var cast = Expression.Convert(a, typeof(object));
+                    var body = Expression.Call(null, equals, parameter, cast);
+                    return Expression.Lambda<Func<object, bool>>(body, parameter).Compile();
+                });
+            return (methodCall.Method, argumentPredicates.ToList());
         }
         if (expression.Body is MemberExpression memberExpression
             && memberExpression.Member is PropertyInfo property
             && property.CanRead)
         {
-            return (property.GetGetMethod()!, true);
+            return (property.GetGetMethod()!, Enumerable.Empty<Func<object, bool>>().ToList());
         }
         throw new ArgumentException("Only method call and get property expressions can be setup", nameof(expression));
     }

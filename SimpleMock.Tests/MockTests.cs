@@ -46,9 +46,10 @@ public class MockTests
             .Returns(-12);
 
         Assert.Multiple(() =>
+
         {
-            Assert.That(worker.MockObject.DoSomething(12, "Hello", false), Is.EqualTo(-23));
-            Assert.That(worker.MockObject.DoSomethingStringy(51), Is.EqualTo("Goodbye"));
+            Assert.That(worker.MockObject.DoSomething(8, "9", true), Is.EqualTo(-23));
+            Assert.That(worker.MockObject.DoSomethingStringy(21), Is.EqualTo("Goodbye"));
             Assert.That(worker.MockObject.Height, Is.EqualTo(-12));
         });
     }
@@ -66,9 +67,9 @@ public class MockTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(worker1.MockObject.DoSomething(9, "9", true), Is.EqualTo(31));
-            Assert.That(worker2.MockObject.DoSomething(10, "9", true), Is.EqualTo(93));
-            Assert.That(worker3.MockObject.DoSomething(11, "9", true), Is.EqualTo(76));
+            Assert.That(worker1.MockObject.DoSomething(8, "9", true), Is.EqualTo(31));
+            Assert.That(worker2.MockObject.DoSomething(8, "9", true), Is.EqualTo(93));
+            Assert.That(worker3.MockObject.DoSomething(8, "9", true), Is.EqualTo(76));
         });
     }
 
@@ -95,7 +96,7 @@ public class MockTests
         var parameters = worker.GetCallParameters(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>()), 11);
         Assert.Multiple(() =>
         {
-            Assert.That(parameters.Length, Is.EqualTo(3));
+            Assert.That(parameters, Has.Length.EqualTo(3));
             Assert.That(parameters[0], Is.EqualTo(11));
             Assert.That(parameters[1], Is.EqualTo("Param: 11"));
             Assert.That(parameters[2], Is.False);

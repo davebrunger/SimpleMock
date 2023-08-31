@@ -25,7 +25,18 @@ workerMock
     .Returns(5);
 ```
 
-**N.B.** Currently the values supplied as parameters are ignored. In this example, any call to `DoSomething` will return 5.
+The following two code blocks will return 5 for method calls that passed an empty string for the second parameter regardless of the values of the other two parameters.
+
+```C#
+workerMock
+    .Setup(w => w.DoSomething(It.IsAny<int>(), "", It.IsAny<bool>()))
+    .Retruns(5);
+```
+```C#
+workerMock
+    .Setup(w => w.DoSomething(It.IsAny<int>(), It.Is<string>(s => s == ""), It.IsAny<bool>()))
+    .Retruns(5);
+```
 
 ### Mocking a Readable Property
 ```C#
@@ -44,8 +55,6 @@ var dependant = new Dependant(workerMock.MockObject);
 workerMock.GetCallCount(w => w.DoSomething(0, "", false));
 ```
 
-**N.B.** Unlike `Setup().Returns()` The values supplied as parameters are not ignored. Use `It.IsAny<>()` to match all method calls
-
 The following code will only match method calls that passed an empty string for the second parameter regardless of the values of the other two parameters.
 
 ```C#
@@ -59,8 +68,6 @@ workerMock.GetCallParameters(w => w.DoSomething(0, "", false), 7);
 
 **N.B.** The index is zero-based.
 
-**N.B.** Unlike `Setup().Returns()` The values supplied as parameters are not ignored. Use `It.IsAny<>()` to match all method calls
-
 The following code will only match method calls that passed 59 for the first parameter regardless of the values of the other two parameters.
 
 ```C#
@@ -71,4 +78,3 @@ workerMock.GetCallParameters(w => w.DoSomething(59, It.IsAny<string>(), It.IsAny
 This is only a very simple and niave implementation so there are a number of limitations, amongst which are:
 * Can only mock interfaces
 * No support for callbacks
-* Argument values passed in the `Setup` method are ignored.
