@@ -68,7 +68,7 @@ public class ItTests
     [Test]
     public void TestIs()
     {
-        worker.Setup(w => w.DoSomethingStringy(It.Is<int>(a => a == 7))).Returns("Hello");
+        worker.Setup(w => w.DoSomethingStringy(It.Affirms<int>(a => a == 7))).Returns("Hello");
         Assert.Multiple(() => {
             Assert.That(worker.MockObject.DoSomethingStringy(8), Is.Null);
             Assert.That(worker.MockObject.DoSomethingStringy(7), Is.EqualTo("Hello"));

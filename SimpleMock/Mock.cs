@@ -38,7 +38,7 @@ public class Mock<T>
     private static readonly Dictionary<(T, MethodInfo), List<object[]>> callDetails = new();
     private static readonly Caller caller = new();
     private static readonly TypeGenerator<T> typeGenerator = new(caller);
-    private static readonly MethodInfo equals = typeof(object).GetMethod("Equals", BindingFlags.Static | BindingFlags.Public)!;
+    private static readonly MethodInfo equals = typeof(object).GetMethod(nameof(Equals), BindingFlags.Static | BindingFlags.Public)!;
 
 
     public T MockObject { get; }
@@ -138,7 +138,7 @@ public class Mock<T>
                         {
                             return o => true;
                         }
-                        if (methodCall.Method.GetGenericMethodDefinition() == It.IsMethod)
+                        if (methodCall.Method.GetGenericMethodDefinition() == It.AffirmsMethod)
                         {
                             var castToT = Expression.Convert(parameter, methodCall.Type);
                             var bodyLambda = methodCall.Arguments[0] as LambdaExpression;

@@ -4,7 +4,7 @@ internal class TypeGenerator<T>
 {
     private readonly Mock<T>.Caller caller;
     private readonly Lazy<Type> type;
-    private static readonly MethodInfo callMethod = typeof(Mock<T>.Caller).GetMethod("Call")!;
+    private static readonly MethodInfo callMethod = typeof(Mock<T>.Caller).GetMethod(nameof(Mock<T>.Caller.Call))!;
 
     public Type Type => type.Value;
 
