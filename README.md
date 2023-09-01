@@ -34,7 +34,7 @@ workerMock
 ```
 ```C#
 workerMock
-    .Setup(w => w.DoSomething(It.IsAny<int>(), It.Is<string>(s => s == ""), It.IsAny<bool>()))
+    .Setup(w => w.DoSomething(It.IsAny<int>(), It.Affirms<string>(s => s == ""), It.IsAny<bool>()))
     .Retruns(5);
 ```
 
