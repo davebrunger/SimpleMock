@@ -30,12 +30,12 @@ The following two code blocks will return 5 for method calls that passed an empt
 ```C#
 workerMock
     .Setup(w => w.DoSomething(It.IsAny<int>(), "", It.IsAny<bool>()))
-    .Retruns(5);
+    .Returns(5);
 ```
 ```C#
 workerMock
     .Setup(w => w.DoSomething(It.IsAny<int>(), It.Affirms<string>(s => s == ""), It.IsAny<bool>()))
-    .Retruns(5);
+    .Returns(5);
 ```
 
 ### Mocking a Readable Property
