@@ -4,5 +4,6 @@ public interface IWorker
 {
     int DoSomething(int anInt, string aString, bool aBool);
     string DoSomethingStringy(int anInt);
-    int Height { get; }
+    int Height { get; set; }
+    void DoNothing(int anInt, string aString, bool aBool);
 }

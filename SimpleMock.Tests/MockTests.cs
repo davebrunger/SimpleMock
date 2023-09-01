@@ -102,4 +102,36 @@ public class MockTests
             Assert.That(parameters[2], Is.False);
         });
     }
+
+    [Test]
+    public void TestPropertyCallCount()
+    {
+        Assert.That(worker.GetCallCount(w => w.Height), Is.Zero);
+        for (var i = 0; i < 67; i++)
+        {
+            var dummy = worker.MockObject.Height;
+        }
+        Assert.That(worker.GetCallCount(w => w.Height), Is.EqualTo(67));
+    }
+
+    [Test]
+    public void TestActionVerification()
+    {
+        worker.MockObject.DoNothing(1, "Hello", true);
+        worker.MockObject.DoNothing(2, "Greetings", true);
+        worker.MockObject.DoNothing(3, "Hi", false);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(worker.GetCallCount(w => w.DoNothing(1, "Hello", false)), Is.Zero);
+            Assert.That(worker.GetCallCount(w => w.DoNothing(1, "Hello", true)), Is.EqualTo(1));
+            Assert.That(worker.GetCallCount(w => w.DoNothing(It.IsAny<int>(), It.IsAny<string>(), true)), Is.EqualTo(2));
+            Assert.That(worker.GetCallCount(w => w.DoNothing(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>())), Is.EqualTo(3));
+            var paramerters = worker.GetCallParameters(w => w.DoNothing(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>()), 1);
+            Assert.That(paramerters, Has.Length.EqualTo(3));
+            Assert.That(paramerters[0], Is.EqualTo(2));
+            Assert.That(paramerters[1], Is.EqualTo("Greetings"));
+            Assert.That(paramerters[2], Is.True);
+        });
+    }
 }

@@ -55,14 +55,21 @@ internal class TypeGenerator<T>
         LoadObject(ilGenerator, method);
         ilGenerator.Emit(OpCodes.Ldloc, parameterValues);
         
-        ilGenerator.EmitCall(OpCodes.Callvirt, callMethod!, null);
-        if (method.ReturnType.IsValueType)
+        ilGenerator.EmitCall(OpCodes.Call, callMethod!, null);
+        if (method.ReturnType == typeof(void))
         {
-            ilGenerator.Emit(OpCodes.Unbox_Any, method.ReturnType);
+            ilGenerator.Emit(OpCodes.Pop);
         }
         else
         {
-            ilGenerator.Emit(OpCodes.Castclass, method.ReturnType);
+            if (method.ReturnType.IsValueType)
+            {
+                ilGenerator.Emit(OpCodes.Unbox_Any, method.ReturnType);
+            }
+            else
+            {
+                ilGenerator.Emit(OpCodes.Castclass, method.ReturnType);
+            }
         }
         ilGenerator.Emit(OpCodes.Ret);
         typeBuilder.DefineMethodOverride(methodBuilder, method);

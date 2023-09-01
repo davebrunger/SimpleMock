@@ -75,7 +75,7 @@ public class Mock<T>
         }
 
         // If it doesn't match a setup result return the default instance
-        if (info.ReturnType.IsValueType)
+        if (info.ReturnType.IsValueType && info.ReturnType != typeof(void))
         {
             return Activator.CreateInstance(info.ReturnType);
         }    
@@ -103,6 +103,11 @@ public class Mock<T>
         return GetCallDetails(expression).Count();
     }
 
+    public int GetCallCount(Expression<Action<T>> expression)
+    {
+        return GetCallDetails(expression).Count();
+    }
+
     public object[] GetCallParameters<TResult>(Expression<Func<T, TResult>> expression, int callIndex)
     {
         var callDetails = GetCallDetails(expression).ToList();
@@ -112,8 +117,18 @@ public class Mock<T>
         }
         return callDetails[callIndex];
     }
+    
+    public object[] GetCallParameters(Expression<Action<T>> expression, int callIndex)
+    {
+        var callDetails = GetCallDetails(expression).ToList();
+        if (callIndex < 0 || callIndex >= callDetails.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(callIndex));
+        }
+        return callDetails[callIndex];
+    }
 
-    private IEnumerable<object[]> GetCallDetails<TResult>(Expression<Func<T, TResult>> expression)
+    private IEnumerable<object[]> GetCallDetails(LambdaExpression expression)
     {
         var (method, argumentPredicates) = GetMethod(expression);
         var key = (MockObject, method);
@@ -124,7 +139,7 @@ public class Mock<T>
         return callDetails[key].Where(cd => argumentPredicates.Select((p, i) => (p, i)).All(a => a.p(cd[a.i])));
     }
 
-    private static (MethodInfo MethodInfo, List<Func<object, bool>> ArgumentPredicates) GetMethod<TResult>(Expression<Func<T, TResult>> expression)
+    private static (MethodInfo MethodInfo, List<Func<object, bool>> ArgumentPredicates) GetMethod(LambdaExpression expression)
     {
         if (expression.Body is MethodCallExpression methodCall)
         {
