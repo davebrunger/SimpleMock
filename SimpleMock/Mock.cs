@@ -108,6 +108,11 @@ public class Mock<T>
         return GetCallDetails(expression).Count();
     }
 
+    public int GetSetCallCount<TValue>(Expression<Func<T, TValue>> expression, Expression<Func<TValue>> value)
+    {
+        return GetCallDetails(expression, value).Count();
+    }
+
     public object[] GetCallParameters<TResult>(Expression<Func<T, TResult>> expression, int callIndex)
     {
         var callDetails = GetCallDetails(expression).ToList();
@@ -117,10 +122,20 @@ public class Mock<T>
         }
         return callDetails[callIndex];
     }
-    
+
     public object[] GetCallParameters(Expression<Action<T>> expression, int callIndex)
     {
         var callDetails = GetCallDetails(expression).ToList();
+        if (callIndex < 0 || callIndex >= callDetails.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(callIndex));
+        }
+        return callDetails[callIndex];
+    }
+
+    public TValue GetSetCallParameters<TValue>(Expression<Func<T, TValue>> expression, Expression<Func<TValue>> value, int callIndex)
+    {
+        var callDetails = GetCallDetails(expression, value).ToList();
         if (callIndex < 0 || callIndex >= callDetails.Count)
         {
             throw new ArgumentOutOfRangeException(nameof(callIndex));
@@ -139,6 +154,19 @@ public class Mock<T>
         return callDetails[key].Where(cd => argumentPredicates.Select((p, i) => (p, i)).All(a => a.p(cd[a.i])));
     }
 
+    private IEnumerable<TValue> GetCallDetails<TValue>(Expression<Func<T, TValue>> expression, Expression<Func<TValue>> value)
+    {
+        var (method, argumentPredicates) = GetMethod(expression, value);
+        var key = (MockObject, method);
+        if (!callDetails.ContainsKey(key))
+        {
+            return Enumerable.Empty<TValue>();
+        }
+        return callDetails[key]
+            .Where(cd => argumentPredicates.Select((p, i) => (p, i)).All(a => a.p(cd[a.i])))
+            .Select(o => (TValue)o[0]);
+    }
+
     private static (MethodInfo MethodInfo, List<Func<object, bool>> ArgumentPredicates) GetMethod(LambdaExpression expression)
     {
         if (expression.Body is MethodCallExpression methodCall)
@@ -151,7 +179,7 @@ public class Mock<T>
                     {
                         if (methodCall.Method.GetGenericMethodDefinition() == It.IsAnyMethod)
                         {
-                            return o => true;
+                            return _ => true;
                         }
                         if (methodCall.Method.GetGenericMethodDefinition() == It.AffirmsMethod)
                         {
@@ -173,6 +201,36 @@ public class Mock<T>
         {
             return (property.GetGetMethod()!, Enumerable.Empty<Func<object, bool>>().ToList());
         }
-        throw new ArgumentException("Only method call and get property expressions can be setup", nameof(expression));
+        throw new ArgumentException("Only method calls and readable properties can be setup or queried with this method", nameof(expression));
+    }
+    
+    private static (MethodInfo MethodInfo, List<Func<object, bool>> ArgumentPredicates) GetMethod<TValue>(Expression<Func<T, TValue>> expression, Expression<Func<TValue>> value)
+    {
+        if (expression.Body is MemberExpression memberExpression
+            && memberExpression.Member is PropertyInfo property
+            && property.CanWrite)
+        {
+            var parameter = Expression.Parameter(typeof(object));
+            if (value.Body is MethodCallExpression methodCall && methodCall.Method.IsGenericMethod)
+            {
+                if (methodCall.Method.GetGenericMethodDefinition() == It.IsAnyMethod)
+                {
+                    return (property.GetSetMethod()!, new List<Func<object, bool>> { _ => true });
+                }
+                if (methodCall.Method.GetGenericMethodDefinition() == It.AffirmsMethod)
+                {
+                    var castToTValue = Expression.Convert(parameter, typeof(TValue));
+                    var bodyLambda = methodCall.Arguments[0] as LambdaExpression;
+                    var invoke = Expression.Invoke(methodCall.Arguments[0], castToTValue);
+                    var affirmsPredicate = Expression.Lambda<Func<object, bool>>(invoke, parameter).Compile();
+                    return (property.GetSetMethod()!, new List<Func<object, bool>> { affirmsPredicate });
+                }
+            }
+            var cast = Expression.Convert(value.Body, typeof(object));
+            var body = Expression.Call(null, equals, parameter, cast);
+            var equalsPredicate = Expression.Lambda<Func<object, bool>>(body, parameter).Compile();
+            return (property.GetSetMethod()!, new List<Func<object, bool>> { equalsPredicate });
+        }
+        throw new ArgumentException("Only read/write properties can be queried with this method", nameof(expression));
     }
 }

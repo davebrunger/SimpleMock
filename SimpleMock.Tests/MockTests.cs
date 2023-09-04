@@ -134,4 +134,23 @@ public class MockTests
             Assert.That(paramerters[2], Is.True);
         });
     }
+
+
+    [Test]
+    public void TestPropertySetVerification()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(worker.GetSetCallCount(w => w.Height, () => It.IsAny<int>()), Is.Zero);
+            for (var i = 0; i < 34; i++)
+            {
+                worker.MockObject.Height = i + 1;
+            }
+            Assert.That(worker.GetSetCallCount(w => w.Height, () => It.IsAny<int>()), Is.EqualTo(34));
+            Assert.That(worker.GetSetCallCount(w => w.Height, () => 5), Is.EqualTo(1));
+            Assert.That(worker.GetSetCallCount(w => w.Height, () => It.Affirms<int>(i => i == 34)), Is.EqualTo(1));
+            Assert.That(worker.GetSetCallCount(w => w.Height, () => It.Affirms<int>(i => i == 35)), Is.EqualTo(0));
+            Assert.That(worker.GetSetCallParameters(w => w.Height, () => It.Affirms<int>(i => i < 10), 7), Is.EqualTo(8));
+        });
+    }
 }
