@@ -32,6 +32,26 @@ internal class TypeGenerator<T>
             throw new InvalidOperationException("Mocked type must be an interface or an abstract type!");
         }
 
+        var mockField = typeBuilder.DefineField("mock", typeof(Mock<T>), FieldAttributes.Private | FieldAttributes.InitOnly);
+        var mockProperty = typeBuilder.DefineProperty("Mock", PropertyAttributes.None, typeof(Mock<T>), null);
+        var mockGetMethod = typeBuilder.DefineMethod(
+            "get_Mock",
+            MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
+            typeof(Mock<T>),
+            Type.EmptyTypes);
+        var mockIlGenerator = mockGetMethod.GetILGenerator();
+        mockIlGenerator.Emit(OpCodes.Ldarg_0);
+        mockIlGenerator.Emit(OpCodes.Ldfld, mockField);
+        mockIlGenerator.Emit(OpCodes.Ret);
+        mockProperty.SetGetMethod(mockGetMethod);
+
+        var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[] { typeof(Mock<T>) });
+        var constructorIlGenerator = constructor.GetILGenerator();
+        constructorIlGenerator.Emit(OpCodes.Ldarg_0);
+        constructorIlGenerator.Emit(OpCodes.Ldarg_1);
+        constructorIlGenerator.Emit(OpCodes.Stfld, mockField);
+        constructorIlGenerator.Emit(OpCodes.Ret);
+
         foreach (var method in mockedType.GetMethods())
         {
             GenerateMethod(typeBuilder, method);

@@ -5,19 +5,19 @@ public class Mock<T>
     public sealed class SetupResult<TResult>
     {
         private readonly Mock<T> parent;
-        private readonly MethodInfo info;
+        private readonly MethodInfo method;
         private readonly List<Func<object, bool>> argumentPredicates;
 
-        internal SetupResult(Mock<T> parent, MethodInfo info, List<Func<object, bool>> argumentPredicates)
+        internal SetupResult(Mock<T> parent, MethodInfo method, List<Func<object, bool>> argumentPredicates)
         {
             this.parent = parent;
-            this.info = info;
+            this.method = method;
             this.argumentPredicates = argumentPredicates;
         }
 
         public Mock<T> Returns(TResult result)
         {
-            parent.SetReturn(info, result!, argumentPredicates);
+            parent.SetReturn(method, result!, argumentPredicates);
             return parent;
         }
     }
@@ -28,41 +28,41 @@ public class Mock<T>
         {
         }
 
-        public object? Call(T obj, MethodInfo info, object[] parameters)
+        public object? Call(T mockObject, MethodInfo method, object[] parameters)
         {
-            return Mock<T>.Call(obj, info, parameters);
+            var mockProperty = mockObject!.GetType().GetProperty("Mock")!;
+            var mock = mockProperty.GetValue(mockObject) as Mock<T>;
+            return mock!.Call(method, parameters);
         }
     }
 
-    private static readonly Dictionary<(T, MethodInfo), List<(List<Func<object, bool>> ArgumentPredicates, object ReturnValue)>> returnValues = new();
-    private static readonly Dictionary<(T, MethodInfo), List<object[]>> callDetails = new();
     private static readonly Caller caller = new();
     private static readonly TypeGenerator<T> typeGenerator = new(caller);
     private static readonly MethodInfo equals = typeof(object).GetMethod(nameof(Equals), BindingFlags.Static | BindingFlags.Public)!;
-
+    
+    private readonly Dictionary<MethodInfo, List<(List<Func<object, bool>> ArgumentPredicates, object ReturnValue)>> returnValues = new();
+    private readonly Dictionary<MethodInfo, List<object[]>> callDetails = new();
 
     public T MockObject { get; }
 
     public Mock()
     {
-        MockObject = (T)Activator.CreateInstance(typeGenerator.Type)!;
+        MockObject = (T)Activator.CreateInstance(typeGenerator.Type, this)!;
     }
 
-    protected static object? Call(T obj, MethodInfo info, object[] parameters)
+    protected object? Call(MethodInfo method, object[] parameters)
     {
-        var key = (obj, info);
-
         // Add call to call history
-        if (!callDetails.ContainsKey(key))
+        if (!callDetails.ContainsKey(method))
         {
-            callDetails[key] = new List<object[]>();
+            callDetails[method] = new List<object[]>();
         }
-        callDetails[key].Add(parameters);
+        callDetails[method].Add(parameters);
 
         // Get return value 
-        if (returnValues.ContainsKey(key))
+        if (returnValues.ContainsKey(method))
         {
-            foreach (var (argumentPredicates, returnValue) in returnValues[key])
+            foreach (var (argumentPredicates, returnValue) in returnValues[method])
             {
                 var predicateMatch = argumentPredicates
                     .Select((p, i) => (p, i))
@@ -75,21 +75,20 @@ public class Mock<T>
         }
 
         // If it doesn't match a setup result return the default instance
-        if (info.ReturnType.IsValueType && info.ReturnType != typeof(void))
+        if (method.ReturnType.IsValueType && method.ReturnType != typeof(void))
         {
-            return Activator.CreateInstance(info.ReturnType);
+            return Activator.CreateInstance(method.ReturnType);
         }    
         return null;
     }
 
-    private void SetReturn(MethodInfo info, object result, List<Func<object, bool>> argumentPredicates)
+    private void SetReturn(MethodInfo method, object result, List<Func<object, bool>> argumentPredicates)
     {
-        var key = (MockObject, info);
-        if (!returnValues.ContainsKey(key))
+        if (!returnValues.ContainsKey(method))
         {
-            returnValues[key] = new List<(List<Func<object, bool>> ArgumentPredicates, object ReturnValue)>();
+            returnValues[method] = new List<(List<Func<object, bool>> ArgumentPredicates, object ReturnValue)>();
         }
-        returnValues[(MockObject, info)].Add((argumentPredicates, result));
+        returnValues[method].Add((argumentPredicates, result));
     }
 
     public SetupResult<TResult> Setup<TResult>(Expression<Func<T, TResult>> expression)
@@ -146,23 +145,21 @@ public class Mock<T>
     private IEnumerable<object[]> GetCallDetails(LambdaExpression expression)
     {
         var (method, argumentPredicates) = GetMethod(expression);
-        var key = (MockObject, method);
-        if (!callDetails.ContainsKey(key))
+        if (!callDetails.ContainsKey(method))
         {
             return Enumerable.Empty<object[]>();
         }
-        return callDetails[key].Where(cd => argumentPredicates.Select((p, i) => (p, i)).All(a => a.p(cd[a.i])));
+        return callDetails[method].Where(cd => argumentPredicates.Select((p, i) => (p, i)).All(a => a.p(cd[a.i])));
     }
 
     private IEnumerable<TValue> GetCallDetails<TValue>(Expression<Func<T, TValue>> expression, Expression<Func<TValue>> value)
     {
         var (method, argumentPredicates) = GetMethod(expression, value);
-        var key = (MockObject, method);
-        if (!callDetails.ContainsKey(key))
+        if (!callDetails.ContainsKey(method))
         {
             return Enumerable.Empty<TValue>();
         }
-        return callDetails[key]
+        return callDetails[method]
             .Where(cd => argumentPredicates.Select((p, i) => (p, i)).All(a => a.p(cd[a.i])))
             .Select(o => (TValue)o[0]);
     }
