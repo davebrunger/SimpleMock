@@ -3,15 +3,17 @@
 internal class TypeGenerator<T>
 {
     private readonly Mock<T>.Caller caller;
+    private readonly string mockPropertyName;
     private readonly Lazy<Type> type;
     private static readonly MethodInfo callMethod = typeof(Mock<T>.Caller).GetMethod(nameof(Mock<T>.Caller.Call))!;
 
     public Type Type => type.Value;
 
-    public TypeGenerator(Mock<T>.Caller caller)
+    public TypeGenerator(Mock<T>.Caller caller, string mockPropertyName)
     {
         this.caller = caller;
         type = new Lazy<Type>(() => GenerateType());
+        this.mockPropertyName = mockPropertyName;
     }
 
     private Type GenerateType()
@@ -32,10 +34,10 @@ internal class TypeGenerator<T>
             throw new InvalidOperationException("Mocked type must be an interface or an abstract type!");
         }
 
-        var mockField = typeBuilder.DefineField("mock", typeof(Mock<T>), FieldAttributes.Private | FieldAttributes.InitOnly);
-        var mockProperty = typeBuilder.DefineProperty("Mock", PropertyAttributes.None, typeof(Mock<T>), null);
+        var mockField = typeBuilder.DefineField(mockPropertyName.ToLower(), typeof(Mock<T>), FieldAttributes.Private | FieldAttributes.InitOnly);
+        var mockProperty = typeBuilder.DefineProperty(mockPropertyName, PropertyAttributes.None, typeof(Mock<T>), null);
         var mockGetMethod = typeBuilder.DefineMethod(
-            "get_Mock",
+            $"get_{mockPropertyName}",
             MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
             typeof(Mock<T>),
             Type.EmptyTypes);

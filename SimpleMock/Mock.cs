@@ -30,14 +30,16 @@ public class Mock<T>
 
         public object? Call(T mockObject, MethodInfo method, object[] parameters)
         {
-            var mockProperty = mockObject!.GetType().GetProperty("Mock")!;
+            var mockProperty = mockObject!.GetType().GetProperty(MockPropertyName)!;
             var mock = mockProperty.GetValue(mockObject) as Mock<T>;
             return mock!.Call(method, parameters);
         }
     }
 
+    public const string MockPropertyName = "Mock";
+
     private static readonly Caller caller = new();
-    private static readonly TypeGenerator<T> typeGenerator = new(caller);
+    private static readonly TypeGenerator<T> typeGenerator = new(caller, MockPropertyName);
     private static readonly MethodInfo equals = typeof(object).GetMethod(nameof(Equals), BindingFlags.Static | BindingFlags.Public)!;
     
     private readonly Dictionary<MethodInfo, List<(List<Func<object, bool>> ArgumentPredicates, object ReturnValue)>> returnValues = new();
