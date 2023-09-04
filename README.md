@@ -74,7 +74,22 @@ The following code will only match method calls that passed 59 for the first par
 workerMock.GetCallParameters(w => w.DoSomething(59, It.IsAny<string>(), It.IsAny<bool>()), 2);
 ```
 
+### Getting the Count of Set Operations on a Read/Write Property
+```C#
+workerMock.GetSetCallCount(w => w.Height, () => It.IsAny<int>());
+```
+
+### Getting the Parameter Values of Set Operations on a Read/Write Property
+```C#
+workerMock.GetSetCallParameters(w => w.Height, () => It.Affirms<int>(h => h < 10), 7);
+```
+
+**N.B.** The index is zero-based.
+
 ## Limitations
 This is only a very simple and niave implementation so there are a number of limitations, amongst which are:
+* No support for set only parameters
+  * This is much harder to implement. It involves decompiling and intepretring a call to the set code as a set
+  property call is not a legal expression that can be interpreted as an expression tree.
 * Can only mock interfaces
 * No support for callbacks
