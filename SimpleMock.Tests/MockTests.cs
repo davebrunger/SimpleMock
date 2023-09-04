@@ -87,15 +87,15 @@ public class MockTests
     [Test]
     public void TestCallCount()
     {
-        Assert.That(worker.GetCallCount(w => w.DoSomething(0, "", false)), Is.Zero);
-        for (var i = 0; i < 67; i++)
-        {
-            worker.MockObject.DoSomething(i, $"Param: {i}", i % 2 == 0);
-        }
-        Assert.That(worker.GetCallCount(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>())), Is.EqualTo(67));
-        var parameters = worker.GetCallParameters(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>()), 11);
         Assert.Multiple(() =>
         {
+            Assert.That(worker.GetCallCount(w => w.DoSomething(0, "", false)), Is.Zero);
+            for (var i = 0; i < 67; i++)
+            {
+                worker.MockObject.DoSomething(i, $"Param: {i}", i % 2 == 0);
+            }
+            Assert.That(worker.GetCallCount(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>())), Is.EqualTo(67));
+            var parameters = worker.GetCallParameters(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>()), 11);
             Assert.That(parameters, Has.Length.EqualTo(3));
             Assert.That(parameters[0], Is.EqualTo(11));
             Assert.That(parameters[1], Is.EqualTo("Param: 11"));
@@ -106,12 +106,16 @@ public class MockTests
     [Test]
     public void TestPropertyCallCount()
     {
-        Assert.That(worker.GetCallCount(w => w.Height), Is.Zero);
-        for (var i = 0; i < 67; i++)
+        Assert.Multiple(() =>
         {
-            var dummy = worker.MockObject.Height;
-        }
-        Assert.That(worker.GetCallCount(w => w.Height), Is.EqualTo(67));
+            Assert.That(worker.GetCallCount(w => w.Height), Is.Zero);
+            for (var i = 0; i < 67; i++)
+            {
+                var dummy = worker.MockObject.Height;
+            }
+            Assert.That(worker.GetCallCount(w => w.Height), Is.EqualTo(67));
+            Assert.That(worker.GetCallParameters(w => w.Height, 12), Has.Length.Zero);
+        });
     }
 
     [Test]
@@ -134,4 +138,14 @@ public class MockTests
             Assert.That(paramerters[2], Is.True);
         });
     }
+
+    [Test]
+    public void TestSetPropertyCallCount()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(worker.GetSetCallCount(w => w.SetOnly = It.IsAny<int>()), Is.Zero);
+        });
+    }
+
 }

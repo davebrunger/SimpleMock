@@ -26,22 +26,20 @@ public class ItTests
     [Test]
     public void TestCallCount()
     {
-        Assert.That(worker.GetCallCount(w => w.DoSomething(0, "", false)), Is.Zero);
-        for (var i = 0; i < 3; i++)
+        Assert.Multiple(() =>
         {
-            worker.MockObject.DoSomething(i, $"Param: {i}", i % 2 == 0);
-        }
-        Assert.Multiple(() => {
+            Assert.That(worker.GetCallCount(w => w.DoSomething(0, "", false)), Is.Zero);
+            for (var i = 0; i < 3; i++)
+            {
+                worker.MockObject.DoSomething(i, $"Param: {i}", i % 2 == 0);
+            }
             Assert.That(worker.GetCallCount(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>())), Is.EqualTo(3));
             Assert.That(worker.GetCallCount(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), true)), Is.EqualTo(2));
             Assert.That(worker.GetCallCount(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), GetTrue())), Is.EqualTo(2));
             Assert.That(worker.GetCallCount(w => w.DoSomething(0, "Param: 0", true)), Is.EqualTo(1));
             Assert.That(worker.GetCallCount(w => w.DoSomething(1, "Param: 1", false)), Is.EqualTo(1));
             Assert.That(worker.GetCallCount(w => w.DoSomething(2, "Param: 2", true)), Is.EqualTo(1));
-        });
-        var parameters = worker.GetCallParameters(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>()), 1);
-        Assert.Multiple(() =>
-        {
+            var parameters = worker.GetCallParameters(w => w.DoSomething(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<bool>()), 1);
             Assert.That(parameters, Has.Length.EqualTo(3));
             Assert.That(parameters[0], Is.EqualTo(1));
             Assert.That(parameters[1], Is.EqualTo("Param: 1"));

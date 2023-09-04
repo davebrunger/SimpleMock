@@ -1,4 +1,6 @@
-﻿namespace SimpleMock;
+﻿using System.Reflection.Metadata.Ecma335;
+
+namespace SimpleMock;
 
 public class Mock<T>
 {
@@ -106,6 +108,15 @@ public class Mock<T>
     public int GetCallCount(Expression<Action<T>> expression)
     {
         return GetCallDetails(expression).Count();
+    }
+    
+    public int GetSetCallCount(Action<T> action)
+    {
+        var token = action.Method.MetadataToken;
+        var handle = MetadataTokens.EntityHandle(token);
+
+
+        return handle.GetHashCode();
     }
 
     public object[] GetCallParameters<TResult>(Expression<Func<T, TResult>> expression, int callIndex)
