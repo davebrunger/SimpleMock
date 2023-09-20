@@ -1,6 +1,15 @@
 # SimpleMock
 SimpleMock is a very simple mocking framework, something that I have always wanted to try to write but I was prompted to have a go after a discussion at work.
 
+## Installation
+```
+dotnet add package SimpleMock
+```
+or
+```
+NuGet\Install-Package SimpleMock
+```
+
 ## Usage
 The examples below use the following interface as an example
 
@@ -88,8 +97,8 @@ workerMock.GetSetCallParameters(w => w.Height, () => It.Affirms<int>(h => h < 10
 
 ## Limitations
 This is only a very simple and niave implementation so there are a number of limitations, amongst which are:
-* No support for set only parameters
+* Limited support for set only parameters
   * This is much harder to implement. It involves decompiling and intepretring a call to the set code as a set
   property call is not a legal expression that can be interpreted as an expression tree.
-* Can only mock interfaces
+* Can only mock interfaces, not abstract classes
 * No support for callbacks
